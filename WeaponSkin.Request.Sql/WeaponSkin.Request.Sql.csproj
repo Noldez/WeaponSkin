@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<AssemblyName>WeaponSkin.Request.Sql</AssemblyName>
+		<Version>1.0.9</Version>
+
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.5" />
+		<PackageReference Include="ModSharp.Sharp.Shared" Version="*" PrivateAssets="all" />
+		<PackageReference Include="MySqlConnector" Version="2.5.0" />
+		<PackageReference Include="Npgsql" Version="10.0.2" />
+		<PackageReference Include="SqlSugarCoreNoDrive" Version="5.1.4.213" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\WeaponSkin.Shared\WeaponSkin.Shared.csproj" Private="false" ExcludeAssets="runtime" />
+	</ItemGroup>
+</Project>
+
