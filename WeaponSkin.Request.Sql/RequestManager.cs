@@ -43,10 +43,20 @@ internal class RequestManager : IRequestManager
         _db.CodeFirst.InitTables<TeamMusicKitEntity>();
         _db.CodeFirst.InitTables<TeamMedalEntity>();
         _db.CodeFirst.InitTables<CustomModelEntity>();
+        _db.CodeFirst.InitTables<CustomPlayerModelEntity>();
     }
 
     public void Dispose()
         => _db.Dispose();
+
+    public async Task<string?> GetPlayerCustomPlayerModel(SteamID steamId)
+    {
+        var steamIdValue = (ulong)steamId;
+        var entity = await _db.Queryable<CustomPlayerModelEntity>()
+                              .Where(x => x.SteamId == steamIdValue)
+                              .FirstAsync();
+        return entity?.ModelPath;
+    }
 
     public async Task<Dictionary<string, int>> RunMigration()
     {
@@ -80,7 +90,30 @@ internal class RequestManager : IRequestManager
 
         var customModelMap = customModels.ToDictionary(x => x.ItemId, x => x.ModelPath);
 
-        return entities.Select(e => MapToWeaponCosmetics(e, customModelMap)).ToArray();
+        var result = entities.Select(e => MapToWeaponCosmetics(e, customModelMap)).ToList();
+
+        // Include weapons that only have a custom model with no paint skin entry
+        var existingIds = result.Select(r => (int)r.ItemId).ToHashSet();
+        foreach (var cm in customModels)
+        {
+            if (!existingIds.Contains(cm.ItemId))
+            {
+                result.Add(new WeaponCosmetics
+                {
+                    ItemId      = (EconItemId) cm.ItemId,
+                    PaintId     = 0,
+                    Wear        = 0f,
+                    Seed        = 0f,
+                    StatTrak    = null,
+                    NameTag     = string.Empty,
+                    Stickers    = new Sticker?[5],
+                    Keychain    = null,
+                    CustomModel = cm.ModelPath,
+                });
+            }
+        }
+
+        return result.ToArray();
     }
 
     public async Task SetCustomModel(SteamID steamId, int itemId, string modelPath)

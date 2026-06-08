@@ -221,6 +221,11 @@ public class WeaponSkinRequest : IModSharpModule, IRequestManager
             ? throw new InvalidOperationException("RequestManager not initialized")
             : _requestManager.GetPlayerTeamMedals(steamId);
 
+    public Task<string?> GetPlayerCustomPlayerModel(SteamID steamId)
+        => _requestManager == null
+            ? throw new InvalidOperationException("RequestManager not initialized")
+            : _requestManager.GetPlayerCustomPlayerModel(steamId);
+
     public Task<Dictionary<string, int>> RunMigration()
         => _requestManager == null
             ? throw new InvalidOperationException("RequestManager not initialized")

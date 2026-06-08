@@ -16,6 +16,8 @@ public interface IRequestManager
     Task<TeamItem[]> GetPlayerTeamMusicKits(SteamID steamId);
     Task<TeamItem[]> GetPlayerTeamMedals(SteamID steamId);
 
+    Task<string?> GetPlayerCustomPlayerModel(SteamID steamId);
+
     Task<Dictionary<string, int>> RunMigration();
 
     Task UpdateStatTrak(SteamID steamId, EconItemId itemId, int statTrak);

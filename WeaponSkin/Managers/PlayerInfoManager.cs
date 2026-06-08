@@ -25,6 +25,8 @@ internal interface IPlayerInfoManager
 
     EconGlovesId? GetPlayerGloves(IGameClient client, CStrikeTeam team);
 
+    string? GetPlayerCustomModel(IGameClient client);
+
     void RefreshInventory(IGameClient client);
 }
 
@@ -44,6 +46,7 @@ internal class PlayerInfoManager : IPlayerInfoManager, IClientListener, IManager
     private readonly EconItemId?[,]      _playerKnives = new EconItemId?[PlayerSlot.MaxPlayerCount, TEAM_MAX_COUNT];
     private readonly EconGlovesId?[,]    _playerGloves = new EconGlovesId?[PlayerSlot.MaxPlayerCount, TEAM_MAX_COUNT];
     private readonly WeaponCosmetics[][] _weaponCosmetics;
+    private readonly string?[]           _playerCustomModels = new string?[PlayerSlot.MaxPlayerCount];
 
     private readonly ushort?[,] _playerAgents    = new ushort?[PlayerSlot.MaxPlayerCount, TEAM_MAX_COUNT];
     private readonly ushort?[,] _playerMedals    = new ushort?[PlayerSlot.MaxPlayerCount, TEAM_MAX_COUNT];
@@ -127,6 +130,9 @@ internal class PlayerInfoManager : IPlayerInfoManager, IClientListener, IManager
     public EconGlovesId? GetPlayerGloves(IGameClient client, CStrikeTeam team)
         => GetPlayerTeamItem(_playerGloves, client, team);
 
+    public string? GetPlayerCustomModel(IGameClient client)
+        => _playerCustomModels[client.Slot];
+
     public void RefreshInventory(IGameClient client)
     {
         if (client.IsFakeClient)
@@ -206,7 +212,8 @@ internal class PlayerInfoManager : IPlayerInfoManager, IClientListener, IManager
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void ClearPlayerData(PlayerSlot slot)
     {
-        _weaponCosmetics[slot] = [];
+        _weaponCosmetics[slot]    = [];
+        _playerCustomModels[slot] = null;
 
         for (var i = 0; i < TEAM_MAX_COUNT; i++)
         {
@@ -229,20 +236,24 @@ internal class PlayerInfoManager : IPlayerInfoManager, IClientListener, IManager
                 return;
             }
 
-            var cosmetics = request.GetPlayerWeaponCosmetics(steamId);
-            var knives    = request.GetPlayerTeamKnives(steamId);
-            var gloves    = request.GetPlayerTeamGloves(steamId);
-            var medals    = request.GetPlayerTeamMedals(steamId);
-            var musicKits = request.GetPlayerTeamMusicKits(steamId);
-            var agents    = request.GetPlayerTeamAgent(steamId);
+            var cosmetics    = request.GetPlayerWeaponCosmetics(steamId);
+            var knives       = request.GetPlayerTeamKnives(steamId);
+            var gloves       = request.GetPlayerTeamGloves(steamId);
+            var medals       = request.GetPlayerTeamMedals(steamId);
+            var musicKits    = request.GetPlayerTeamMusicKits(steamId);
+            var agents       = request.GetPlayerTeamAgent(steamId);
+            var customModel  = request.GetPlayerCustomPlayerModel(steamId);
 
-            await Task.WhenAll(cosmetics, knives, gloves, medals, musicKits, agents).ConfigureAwait(false);
+            await Task.WhenAll(cosmetics, knives, gloves, medals, musicKits, agents, customModel).ConfigureAwait(false);
+
+            _logger.LogInformation("Inventory loaded for {steamId}: customModel={model}", steamId, customModel.Result ?? "null");
 
             await _bridge.ModSharp.InvokeFrameActionAsync(() =>
             {
                 if (_bridge.ClientManager.GetGameClient(steamId) is { } target)
                 {
-                    _weaponCosmetics[target.Slot] = cosmetics.Result;
+                    _weaponCosmetics[target.Slot]    = cosmetics.Result;
+                    _playerCustomModels[target.Slot] = customModel.Result;
                     AssignItems(knives.Result,    _playerKnives,    target.Slot);
                     AssignItems(gloves.Result,    _playerGloves,    target.Slot);
                     AssignItems(medals.Result,    _playerMedals,    target.Slot);
